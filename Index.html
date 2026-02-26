@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BetSafe AI - Análise Sharp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .btn-sharp { background: linear-gradient(90deg, #ef4444 0%, #b91c1c 100%); transition: all 0.3s; }
+        .btn-sharp:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-red-500 mb-2">🛡️ BetSafe AI</h1>
+            <p class="text-slate-400">Análise Profissional de Estatísticas e Valor</p>
+        </div>
+
+        <div class="glass p-6 rounded-2xl mb-6">
+            <label class="block text-sm font-medium mb-2">Gemini API Key:</label>
+            <input type="password" id="apiKey" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-red-500 outline-none" placeholder="Cole sua chave AIza...">
+        </div>
+
+        <div class="glass p-6 rounded-2xl">
+            <label class="block text-sm font-medium mb-2">O que vamos analisar hoje?</label>
+            <textarea id="userInput" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white mb-4 outline-none" placeholder="Ex: Analise escanteios para o jogo do Real Madrid..."></textarea>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="generateAnalysis('seguro')" class="btn-sharp p-3 rounded-lg font-bold">🚀 Bilhete Seguro</button>
+                <button onclick="generateAnalysis('zebra')" class="btn-sharp p-3 rounded-lg font-bold bg-slate-700 from-slate-700 to-slate-900">🦓 Buscar Zebra</button>
+            </div>
+        </div>
+
+        <div id="loading" class="hidden mt-8 text-center text-red-500 animate-pulse">⚙️ Processando dados estatísticos...</div>
+        <div id="result" class="mt-8 prose prose-invert max-w-none glass p-6 rounded-2xl hidden"></div>
+    </div>
+
+    <script>
+        async function generateAnalysis(type) {
+            const key = document.getElementById('apiKey').value;
+            const input = document.getElementById('userInput').value;
+            const resultDiv = document.getElementById('result');
+            const loading = document.getElementById('loading');
+
+            if (!key || !input) {
+                alert("Por favor, preencha a API Key e a sua dúvida.");
+                return;
+            }
+
+            loading.classList.remove('hidden');
+            resultDiv.classList.add('hidden');
+
+            const systemPrompt = "Você é o BetSafe AI, analista Sharp. " + 
+                (type === 'seguro' ? "Foque em mercados de alta probabilidade (>90%) como escanteios e gols." : "Foque em buscar ineficiências e zebras de valor.");
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: systemPrompt + " Analise o seguinte: " + input }] }]
+                    })
+                });
+
+                const data = await response.json();
+                const text = data.candidates[0].content.parts[0].text;
+                
+                resultDiv.innerHTML = `<div class="whitespace-pre-wrap">${text}</div>`;
+                resultDiv.classList.remove('hidden');
+            } catch (error) {
+                alert("Erro ao consultar a API. Verifique sua chave.");
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
