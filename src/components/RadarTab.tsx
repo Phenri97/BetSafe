@@ -11,40 +11,46 @@ const fallbackTrends: TrendAlert[] = [
     id: "t1",
     match: "Flamengo x Fluminense",
     league: "Campeonato Carioca",
-    time: "Hoje, 21:30",
+    date: "27/02/2026",
+    time: "21:30",
     market: "Ambas Marcam",
     selection: "Sim",
     oldOdds: 2.15,
     newOdds: 1.75,
     dropPercentage: 18.6,
     reason: "Volume anormal de apostas (Smart Money)",
-    heatLevel: 5
+    heatLevel: 5,
+    type: 'Smart Money'
   },
   {
     id: "t2",
     match: "Golden State Warriors x LA Lakers",
     league: "NBA",
-    time: "Hoje, 23:00",
+    date: "27/02/2026",
+    time: "23:00",
     market: "Handicap",
     selection: "Lakers +5.5",
     oldOdds: 1.90,
     newOdds: 1.65,
     dropPercentage: 13.1,
     reason: "Stephen Curry confirmado fora (Lesão)",
-    heatLevel: 4
+    heatLevel: 4,
+    type: 'Dropping Odds'
   },
   {
     id: "t3",
     match: "Palmeiras x São Paulo",
     league: "Campeonato Paulista",
-    time: "Amanhã, 16:00",
+    date: "28/02/2026",
+    time: "16:00",
     market: "Gols Totais",
     selection: "Menos de 2.5",
     oldOdds: 1.85,
     newOdds: 1.55,
     dropPercentage: 16.2,
     reason: "Previsão de chuva forte no horário do jogo",
-    heatLevel: 3
+    heatLevel: 3,
+    type: 'Dropping Odds'
   }
 ];
 
@@ -57,18 +63,45 @@ export default function RadarTab() {
 
   const loadTrends = async () => {
     setIsSyncing(true);
-    toast.loading('O Radar está varrendo as casas de apostas em busca de Dropping Odds...', { id: 'radar' });
+    const toastId = toast.loading('O Radar está varrendo as casas de apostas em busca de Dropping Odds...');
     try {
       const data = await fetchMarketTrends(true); // Force refresh
       if (data && data.length > 0) {
-        setTrends(data);
+        // Client-side filter for strictly future games (Brasilia Time)
+        const nowBr = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+        
+        const filteredTrends = data.filter(trend => {
+          try {
+            // Parse date DD/MM/YYYY
+            const [day, month, year] = trend.date.split('/').map(Number);
+            // Parse time HH:mm
+            const [hour, minute] = trend.time.split(':').map(Number);
+            
+            if (!day || !month || !year || isNaN(hour) || isNaN(minute)) {
+              return true; 
+            }
+
+            const trendDate = new Date(year, month - 1, day, hour, minute);
+            
+            // STRICT RULE: Game must be in the future.
+            if (nowBr.getTime() > trendDate.getTime()) {
+              return false;
+            }
+            
+            return true;
+          } catch (e) {
+            return true;
+          }
+        });
+
+        setTrends(filteredTrends);
         setVisibleCount(5); // Reset pagination
-        toast.success('Radar atualizado com as últimas tendências do mercado!', { id: 'radar' });
+        toast.success('Radar atualizado com as últimas tendências do mercado!', { id: toastId });
       } else {
-        toast.error('Nenhuma tendência forte encontrada no momento. Mantendo dados anteriores.', { id: 'radar' });
+        toast.error('Nenhuma tendência forte encontrada no momento.', { id: toastId });
       }
     } catch (error) {
-      toast.error('Erro ao conectar com o Radar. Verifique sua conexão.', { id: 'radar' });
+      toast.error('Erro ao conectar com o Radar.', { id: toastId });
     } finally {
       setIsSyncing(false);
     }
@@ -190,7 +223,7 @@ export default function RadarTab() {
               <div className="flex-1 p-4 md:p-6 bg-white">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-[10px] font-mono bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded border border-zinc-200">
-                    {trend.time}
+                    {trend.date === new Date().toLocaleDateString('pt-BR') ? 'Hoje' : trend.date} {trend.time}
                   </span>
                   <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
                     {trend.league}

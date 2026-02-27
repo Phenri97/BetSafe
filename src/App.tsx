@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Calculator, BrainCircuit, AlertTriangle, Activity, Menu, X, Ticket, Wallet, Wand2, Radar, Rocket } from 'lucide-react';
+import { LayoutDashboard, Calculator, BrainCircuit, AlertTriangle, Activity, Menu, X, Ticket, Wallet, Wand2, Radar, Rocket, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from 'sonner';
 import DashboardTab from '@/components/DashboardTab';
-import CalculatorTab from '@/components/CalculatorTab';
-import AiAnalysisTab from '@/components/AiAnalysisTab';
+import InsightsTab from '@/components/InsightsTab';
 import TicketsTab from '@/components/TicketsTab';
 import BankrollTab from '@/components/BankrollTab';
 import BetMentorTab from '@/components/BetMentorTab';
 import RadarTab from '@/components/RadarTab';
 import LeverageTab from '@/components/LeverageTab';
+import ArbitrageMonitorTab from '@/components/ArbitrageMonitorTab';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -23,7 +23,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-zinc-50 text-zinc-900 font-sans overflow-hidden">
-      <Toaster position="top-center" richColors theme="light" />
+      <Toaster position="bottom-right" richColors theme="light" closeButton expand={false} visibleToasts={3} />
       
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-zinc-950 text-zinc-100 flex items-center justify-between px-4 z-50 border-b border-zinc-800">
@@ -107,24 +107,24 @@ export default function App() {
             </div>
           </button>
           <button
-            onClick={() => handleTabChange('calculator')}
+            onClick={() => handleTabChange('arbitrage')}
             className={cn(
               "w-full flex items-center gap-3 px-4 py-3 md:py-2.5 rounded-md text-sm font-mono transition-colors",
-              activeTab === 'calculator' ? "bg-emerald-900/50 text-emerald-400 border border-emerald-800/50" : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200 border border-transparent"
+              activeTab === 'arbitrage' ? "bg-emerald-900/50 text-emerald-400 border border-emerald-800/50" : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200 border border-transparent"
             )}
           >
-            <Calculator className="w-5 h-5 md:w-4 md:h-4" />
-            Cálculo de Arbitragem
+            <ShieldCheck className="w-5 h-5 md:w-4 md:h-4 text-emerald-500" />
+            Monitor de Arbitragem
           </button>
           <button
-            onClick={() => handleTabChange('ai')}
+            onClick={() => handleTabChange('insights')}
             className={cn(
               "w-full flex items-center gap-3 px-4 py-3 md:py-2.5 rounded-md text-sm font-mono transition-colors",
-              activeTab === 'ai' ? "bg-emerald-900/50 text-emerald-400 border border-emerald-800/50" : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200 border border-transparent"
+              activeTab === 'insights' ? "bg-emerald-900/50 text-emerald-400 border border-emerald-800/50" : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200 border border-transparent"
             )}
           >
-            <BrainCircuit className="w-5 h-5 md:w-4 md:h-4" />
-            Modelagem IA
+            <BrainCircuit className="w-5 h-5 md:w-4 md:h-4 text-purple-400" />
+            Insights da IA
           </button>
           <button
             onClick={() => handleTabChange('bankroll')}
@@ -166,8 +166,8 @@ export default function App() {
           {activeTab === 'leverage' && <LeverageTab />}
           {activeTab === 'mentor' && <BetMentorTab />}
           {activeTab === 'tickets' && <TicketsTab />}
-          {activeTab === 'calculator' && <CalculatorTab />}
-          {activeTab === 'ai' && <AiAnalysisTab />}
+          {activeTab === 'arbitrage' && <ArbitrageMonitorTab />}
+          {activeTab === 'insights' && <InsightsTab />}
           {activeTab === 'bankroll' && <BankrollTab />}
         </div>
       </main>

@@ -189,7 +189,7 @@ export default function BetMentorTab() {
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] font-mono bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded border border-zinc-200">
-                              {item.time}
+                              {item.date === new Date().toLocaleDateString('pt-BR') ? 'Hoje' : item.date} {item.time}
                             </span>
                             <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
                               {item.league}

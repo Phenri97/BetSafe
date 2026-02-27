@@ -14,12 +14,44 @@ export default function TicketsTab() {
 
   const loadData = async (force = false) => {
     setIsSyncing(true);
+    const toastId = force ? toast.loading('Gerando bilhetes otimizados com o Fórum de Especialistas...') : undefined;
     try {
       const data = await fetchMarketData(force);
-      setTickets(data.tickets);
-      if (force) toast.success('Bilhetes atualizados com sucesso!');
+      
+      // Client-side filter for strictly future games (Brasilia Time)
+      const nowBr = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+      
+      const filteredTickets = data.tickets.filter(ticket => {
+        // A ticket is valid if ALL its items are in the future
+        return ticket.items.every(item => {
+          try {
+            // Parse date DD/MM/YYYY
+            const [day, month, year] = item.date.split('/').map(Number);
+            // Parse time HH:mm
+            const [hour, minute] = item.time.split(':').map(Number);
+            
+            if (!day || !month || !year || isNaN(hour) || isNaN(minute)) {
+              return true; 
+            }
+
+            const itemDate = new Date(year, month - 1, day, hour, minute);
+            
+            // STRICT RULE: Game must be in the future.
+            if (nowBr.getTime() > itemDate.getTime()) {
+              return false;
+            }
+            
+            return true;
+          } catch (e) {
+            return true;
+          }
+        });
+      });
+
+      setTickets(filteredTickets);
+      if (force) toast.success('Bilhetes atualizados com sucesso!', { id: toastId });
     } catch (error) {
-      toast.error('Erro ao atualizar bilhetes. Usando cache local.');
+      if (force) toast.error('Erro ao atualizar bilhetes.', { id: toastId });
     } finally {
       setIsSyncing(false);
     }
@@ -110,7 +142,9 @@ export default function TicketsTab() {
                   <div key={item.id} className="p-4 hover:bg-zinc-50 transition-colors">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-wider">{item.league} • {item.time}</span>
+                        <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-wider">
+                          {item.league} • {item.date === new Date().toLocaleDateString('pt-BR') ? 'Hoje' : item.date} {item.time}
+                        </span>
                         <h4 className="font-bold text-zinc-900 text-sm mt-0.5">{item.match}</h4>
                       </div>
                       <div className="text-right">

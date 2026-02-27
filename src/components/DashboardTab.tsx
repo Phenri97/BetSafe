@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Activity, Database, Percent, TrendingUp, RefreshCcw, Cpu, Search, Filter, Loader2, Globe } from 'lucide-react';
 import { motion } from 'motion/react';
-import { fetchMarketData, searchTeamMarkets, getFallbackData, Opportunity } from '@/services/marketData';
+import { fetchMarketData, searchTeamMarkets, getFallbackData, Opportunity, clearMarketCache } from '@/services/marketData';
+import { clearCache } from '@/services/aiService';
 import { toast } from 'sonner';
 
 export default function DashboardTab() {
@@ -22,13 +23,51 @@ export default function DashboardTab() {
 
   const loadData = async (force = false) => {
     setIsSyncing(true);
+    const toastId = force ? toast.loading('Limpando cache e sincronizando dados com o Fórum de Especialistas...') : undefined;
+    
+    if (force) {
+      clearCache(); // Clear AI service cache
+      clearMarketCache(); // Clear Market Data cache
+    }
+
     try {
       const data = await fetchMarketData(force);
-      setOpportunities(data.opportunities);
-      setVisibleCount(5); // Reset visible count on new data
-      if (force) toast.success('Dados sincronizados com sucesso!');
+      
+      // Client-side filter for strictly future games (Brasilia Time)
+      const nowBr = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+      
+      const filteredOpps = data.opportunities.filter(opp => {
+        try {
+          // Parse date DD/MM/YYYY
+          const [day, month, year] = opp.date.split('/').map(Number);
+          // Parse time HH:mm
+          const [hour, minute] = opp.time.split(':').map(Number);
+          
+          if (!day || !month || !year || isNaN(hour) || isNaN(minute)) {
+            return true; // Fallback
+          }
+
+          const oppDate = new Date(year, month - 1, day, hour, minute);
+          
+          // STRICT RULE: Game must be in the future.
+          // We allow a very small buffer (e.g., 5 mins) for games just starting, 
+          // but generally we want pre-match bets.
+          // If now > oppDate, the game has started.
+          if (nowBr.getTime() > oppDate.getTime()) {
+            return false;
+          }
+          
+          return true;
+        } catch (e) {
+          return true;
+        }
+      });
+
+      setOpportunities(filteredOpps);
+      setVisibleCount(5);
+      if (force) toast.success('Dados sincronizados com sucesso!', { id: toastId });
     } catch (error) {
-      toast.error('Erro ao sincronizar dados. Usando cache local.');
+      if (force) toast.error('Erro ao sincronizar dados. Usando cache local.', { id: toastId });
     } finally {
       setIsSyncing(false);
     }
@@ -245,10 +284,19 @@ export default function DashboardTab() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
         <Card className="bg-zinc-900 text-zinc-50 border-zinc-800">
           <CardContent className="p-3 md:p-5">
-            <p className="text-[10px] md:text-xs font-mono text-zinc-400 uppercase tracking-wider mb-1 truncate">Mercados</p>
-            <p className="text-lg md:text-2xl font-mono font-bold">14,203</p>
-            <div className="mt-1 md:mt-2 text-[10px] md:text-xs text-emerald-400 flex items-center gap-1">
-              <Activity className="w-3 h-3" /> +124/min
+            <p className="text-[10px] md:text-xs font-mono text-zinc-400 uppercase tracking-wider mb-1 truncate">Fórum de 7 Especialistas</p>
+            <div className="flex items-center gap-2">
+              <p className="text-lg md:text-2xl font-mono font-bold text-emerald-400">ATIVO</p>
+              <Cpu className="w-4 h-4 text-emerald-500 animate-pulse" />
+            </div>
+            <div className="mt-1 md:mt-2 text-[10px] md:text-xs text-zinc-500 flex flex-wrap gap-1">
+              <span className="bg-zinc-800 px-1 rounded">ESTATÍSTICO</span>
+              <span className="bg-zinc-800 px-1 rounded">NOTÍCIAS</span>
+              <span className="bg-zinc-800 px-1 rounded">HISTÓRICO</span>
+              <span className="bg-zinc-800 px-1 rounded">MERCADO</span>
+              <span className="bg-zinc-800 px-1 rounded">VALOR</span>
+              <span className="bg-zinc-800 px-1 rounded">RISCO</span>
+              <span className="bg-zinc-800 px-1 rounded">SOCIAL</span>
             </div>
           </CardContent>
         </Card>
@@ -294,7 +342,9 @@ export default function DashboardTab() {
               <div className="p-4 lg:w-1/3 border-b lg:border-b-0 lg:border-r border-zinc-200 bg-zinc-50/80 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] md:text-xs font-mono font-bold uppercase tracking-wider text-zinc-500">{opp.league} • {opp.time}</span>
+                    <span className="text-[10px] md:text-xs font-mono font-bold uppercase tracking-wider text-zinc-500">
+                      {opp.league} • {opp.date === new Date().toLocaleDateString('pt-BR') ? 'Hoje' : opp.date} {opp.time}
+                    </span>
                     <span className={`text-[10px] md:text-xs font-mono font-bold px-2 py-0.5 rounded ${opp.type === 'Surebet' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
                       {opp.type}
                     </span>
